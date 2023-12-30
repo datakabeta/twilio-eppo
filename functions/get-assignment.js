@@ -12,7 +12,7 @@ exports.handler = async function (context, event, callback) {
     //Eppo assignments logger 
     const assignmentLogger = {
       logAssignment: async function (assignment) {
-        await trackEvent(event);
+        await trackEvent(assignment);
       }
     };
 
@@ -37,13 +37,13 @@ exports.handler = async function (context, event, callback) {
   }
 
   //Log assignment event in Segment
-  async function trackEvent(event) {
+  async function trackEvent(assignment) {
     return new Promise(async (resolve, reject) => {
       try {
         analytics.track({
-          userId: event.userID,
+          userId: assignment.userID,
           event: `Feature Assignment`,
-          properties: event,
+          properties: assignment,
         });
         resolve();
       } catch (err) {
