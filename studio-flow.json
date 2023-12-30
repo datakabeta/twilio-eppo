@@ -1,0 +1,370 @@
+{
+    "description": "SMS Appointment Reminders",
+    "states": [
+      {
+        "name": "Trigger",
+        "type": "trigger",
+        "transitions": [
+          {
+            "next": "set_experiment_key",
+            "event": "incomingMessage"
+          },
+          {
+            "event": "incomingCall"
+          },
+          {
+            "event": "incomingConversationMessage"
+          },
+          {
+            "next": "set_experiment_key",
+            "event": "incomingRequest"
+          },
+          {
+            "event": "incomingParent"
+          }
+        ],
+        "properties": {
+          "offset": {
+            "x": 40,
+            "y": -180
+          }
+        }
+      },
+      {
+        "name": "current_reminder_message",
+        "type": "send-and-wait-for-reply",
+        "transitions": [
+          {
+            "next": "log_experiment_outcome_user_responded",
+            "event": "incomingMessage"
+          },
+          {
+            "next": "log_experiment_outcome_user_did_not_respond",
+            "event": "timeout"
+          },
+          {
+            "event": "deliveryFailure"
+          }
+        ],
+        "properties": {
+          "offset": {
+            "x": 30,
+            "y": 890
+          },
+          "from": "{{flow.channel.address}}",
+          "body": "Your appointment is coming up on {{flow.data.time}} at {{flow.data.loc}}. Please reply 1 to confirm and 2 to cancel.",
+          "timeout": "14400"
+        }
+      },
+      {
+        "name": "split_confirmation",
+        "type": "split-based-on",
+        "transitions": [
+          {
+            "next": "send_no_match",
+            "event": "noMatch"
+          },
+          {
+            "next": "send_confirmation_sms",
+            "event": "match",
+            "conditions": [
+              {
+                "friendly_name": "1",
+                "arguments": [
+                  "{{widgets.current_reminder_message.inbound.Body}}"
+                ],
+                "type": "equal_to",
+                "value": "1"
+              }
+            ]
+          },
+          {
+            "next": "send_cancellation_sms",
+            "event": "match",
+            "conditions": [
+              {
+                "friendly_name": "2",
+                "arguments": [
+                  "{{widgets.current_reminder_message.inbound.Body}}"
+                ],
+                "type": "equal_to",
+                "value": "2"
+              }
+            ]
+          }
+        ],
+        "properties": {
+          "input": "{{widgets.current_reminder_message.inbound.Body}}",
+          "offset": {
+            "x": 430,
+            "y": 1600
+          }
+        }
+      },
+      {
+        "name": "send_confirmation_sms",
+        "type": "send-message",
+        "transitions": [
+          {
+            "event": "sent"
+          },
+          {
+            "event": "failed"
+          }
+        ],
+        "properties": {
+          "offset": {
+            "x": 530,
+            "y": 2000
+          },
+          "from": "{{flow.channel.address}}",
+          "to": "{{contact.channel.address}}",
+          "body": "Thank you for confirming your appointment on {{flow.data.time}} at {{flow.data.loc}}. See you soon!"
+        }
+      },
+      {
+        "name": "send_cancellation_sms",
+        "type": "send-message",
+        "transitions": [
+          {
+            "event": "sent"
+          },
+          {
+            "event": "failed"
+          }
+        ],
+        "properties": {
+          "offset": {
+            "x": 940,
+            "y": 1990
+          },
+          "from": "{{flow.channel.address}}",
+          "to": "{{contact.channel.address}}",
+          "body": "We understand that plans change. Thanks for letting us know! We will go ahead and cancel your appointment on {{flow.data.time}} at {{flow.data.loc}}. \n\nYou can schedule a new appointment at https://shorturl.at/tEHJP ."
+        }
+      },
+      {
+        "name": "send_no_match",
+        "type": "send-message",
+        "transitions": [
+          {
+            "event": "sent"
+          },
+          {
+            "event": "failed"
+          }
+        ],
+        "properties": {
+          "offset": {
+            "x": 160,
+            "y": 2010
+          },
+          "from": "{{flow.channel.address}}",
+          "to": "{{contact.channel.address}}",
+          "body": "We're sorry, we couldn't understand your response. Please try again."
+        }
+      },
+      {
+        "name": "get_assignment",
+        "type": "run-function",
+        "transitions": [
+          {
+            "next": "split_based_on_assigned_variation",
+            "event": "success"
+          },
+          {
+            "event": "fail"
+          }
+        ],
+        "properties": {
+          "service_sid": "ZS481555ee87fe43090bdbec2d3d59ba3a",
+          "environment_sid": "ZEc6b28fb5cd6e08a7f76e2fd6d43a18d9",
+          "offset": {
+            "x": 440,
+            "y": 330
+          },
+          "function_sid": "ZH24422a72a31a36de8068ef9098b8813a",
+          "parameters": [
+            {
+              "value": "{{flow.variables.experiment_key}}",
+              "key": "experimentKey"
+            },
+            {
+              "value": "{{trigger.call.From}}",
+              "key": "userID"
+            }
+          ],
+          "url": "https://eppo-7808-dev.twil.io/get-assignment"
+        }
+      },
+      {
+        "name": "split_based_on_assigned_variation",
+        "type": "split-based-on",
+        "transitions": [
+          {
+            "event": "noMatch"
+          },
+          {
+            "next": "current_reminder_message",
+            "event": "match",
+            "conditions": [
+              {
+                "friendly_name": "If value equal_to msgA",
+                "arguments": [
+                  "{{widgets.get_assignment_express.parsed.variation}}"
+                ],
+                "type": "equal_to",
+                "value": "currentMessage"
+              }
+            ]
+          },
+          {
+            "next": "new_reminder_message",
+            "event": "match",
+            "conditions": [
+              {
+                "friendly_name": "If value equal_to msgB",
+                "arguments": [
+                  "{{widgets.get_assignment_express.parsed.variation}}"
+                ],
+                "type": "equal_to",
+                "value": "newMessage"
+              }
+            ]
+          }
+        ],
+        "properties": {
+          "input": "{{widgets.get_assignment_express.parsed.variation}}",
+          "offset": {
+            "x": 360,
+            "y": 600
+          }
+        }
+      },
+      {
+        "name": "new_reminder_message",
+        "type": "send-and-wait-for-reply",
+        "transitions": [
+          {
+            "next": "log_experiment_outcome_user_responded",
+            "event": "incomingMessage"
+          },
+          {
+            "next": "log_experiment_outcome_user_did_not_respond",
+            "event": "timeout"
+          },
+          {
+            "event": "deliveryFailure"
+          }
+        ],
+        "properties": {
+          "offset": {
+            "x": 1000,
+            "y": 880
+          },
+          "from": "{{flow.channel.address}}",
+          "body": "We are getting ready to see you today at {{flow.data.loc}}. If you confirm that you're coming in at {{flow.data.time}} , we might have a surprise for you! \n\nNo penalties apply if you cancel now and we will text you a link to reschedule.\n\nReply 1 to confirm and 2 to cancel, within the next 2 hours.",
+          "timeout": "14400"
+        }
+      },
+      {
+        "name": "log_experiment_outcome_user_responded",
+        "type": "run-function",
+        "transitions": [
+          {
+            "next": "split_confirmation",
+            "event": "success"
+          },
+          {
+            "event": "fail"
+          }
+        ],
+        "properties": {
+          "service_sid": "ZS481555ee87fe43090bdbec2d3d59ba3a",
+          "environment_sid": "ZEc6b28fb5cd6e08a7f76e2fd6d43a18d9",
+          "offset": {
+            "x": 440,
+            "y": 1300
+          },
+          "function_sid": "ZH04f614c9af4b87bb953a221ff5ff9007",
+          "parameters": [
+            {
+              "value": "{{trigger.call.From}}",
+              "key": "userID"
+            },
+            {
+              "value": "{{flow.variables.experiment_key}}",
+              "key": "experimentKey"
+            },
+            {
+              "value": "true",
+              "key": "did_user_respond"
+            }
+          ],
+          "url": "https://eppo-7808-dev.twil.io/log-outcome"
+        }
+      },
+      {
+        "name": "log_experiment_outcome_user_did_not_respond",
+        "type": "run-function",
+        "transitions": [
+          {
+            "event": "success"
+          },
+          {
+            "event": "fail"
+          }
+        ],
+        "properties": {
+          "service_sid": "ZS481555ee87fe43090bdbec2d3d59ba3a",
+          "environment_sid": "ZEc6b28fb5cd6e08a7f76e2fd6d43a18d9",
+          "offset": {
+            "x": 970,
+            "y": 1320
+          },
+          "function_sid": "ZH04f614c9af4b87bb953a221ff5ff9007",
+          "parameters": [
+            {
+              "value": "{{trigger.call.From}}",
+              "key": "userID"
+            },
+            {
+              "value": "{{flow.variables.experiment_key}}",
+              "key": "experimentKey"
+            },
+            {
+              "value": "false",
+              "key": "did_user_respond"
+            }
+          ],
+          "url": "https://eppo-7808-dev.twil.io/log-outcome"
+        }
+      },
+      {
+        "name": "set_experiment_key",
+        "type": "set-variables",
+        "transitions": [
+          {
+            "next": "get_assignment",
+            "event": "next"
+          }
+        ],
+        "properties": {
+          "variables": [
+            {
+              "value": "sms-messages",
+              "key": "experiment_key"
+            }
+          ],
+          "offset": {
+            "x": 430,
+            "y": 60
+          }
+        }
+      }
+    ],
+    "initial_state": "Trigger",
+    "flags": {
+      "allow_concurrent_calls": true
+    }
+  }
