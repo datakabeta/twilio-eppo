@@ -1,6 +1,6 @@
 # A/B Testing Twilio with Eppo
 
-This code is part of a tutorial which teaches you to A/B test the SMS messages, created with Twilio, using an A/B testing sofware called Eppo. 
+This code is part of a tutorial which teaches you to A/B test SMS messages sent to remind users of upcoming appointments. The goal is to determine whether a change in the message could bolster user's rate of response. 
 
 The key components of this solution are shown below.
 
