@@ -6,10 +6,6 @@ The key components of this solution are shown below.
 
 ![Architecture Diagram](Architecture.png)
 
-
-[Twilio Functions](https://www.twilio.com/docs/serverless/functions-assets/functions) - serverless environment that integrates Twilio with Eppo
-- [Eppo's Node SDK](https://docs.geteppo.com/feature-flags/sdks/node) - Eppo's SDK used to implement experiment
-
 - A Twilio Phone Number lets you send and receive messages.
 - Studio Flow is a drag-and-drop tool to build voice and messaging applications and will be included in your Twilio account. 
 - Twilio Functions is a serverless environment to host your code and is also included in your Twilio account.
